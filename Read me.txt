@@ -1,5 +1,5 @@
 First step:
-    Gaathering data
+    Gathering data
     folder: CollectingData
         FirstGetStationsFromWisconsinAPI.py
             Terget: preparing a list of stations from Wisconsin API

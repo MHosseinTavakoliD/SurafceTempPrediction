@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import re
 from DataCollection.Wisc2023.Locations import location_of_stations
-
+import numpy as np
 
 
 # Function to parse a single line using regular expressions to handle multiple spaces
@@ -30,8 +30,8 @@ def extract_station_name(filename):
     return filename.split('.')[1]
 
 # Station_under_review
-your_directory_path = "C:/Users/zmx5fy/SurafceTempPrediction/DataCollection/Station_under_review//"
-
+# your_directory_path = "C:/Users/zmx5fy/SurafceTempPrediction/DataCollection/Station_under_review//"
+your_directory_path = "C:/Users/zmx5fy/SurafceTempPrediction/DataCollection/Wisc2023/"
 
 
 # Mapping station names to their information
@@ -51,8 +51,48 @@ for filename in os.listdir(your_directory_path):
             dataframes_list.append(df)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.expand_frame_repr', False)
-print (dataframes_list)
+# print (dataframes_list)
 
-# Now dataframes_list contains all the DataFrames for each file, with added station info
+def standardize_dataframe(df, common_columns):
+    # Ensure all required columns are present, fill missing ones with NaN
+    for col in common_columns:
+        if col not in df.columns:
+            df[col] = np.nan
+
+    # Reorder and select the columns to match the standard format
+    standardized_df = df[common_columns]
+
+    return standardized_df
 
 
+common_columns = [
+    'MeasureTime',
+    'Rel. Humidity%',
+    'Air Temperature°F',
+    'Surface Temperature°F',
+    'Wind Speed (act)mph',
+    'Precipitation Intensityin/h',
+    'Saline Concentration%',
+    'Friction',
+    'Ice Percent%',
+    'Station_name',
+    'County',
+    'Latitude',
+    'Longitude'
+]
+
+# Apply standardization to each DataFrame in the list
+standardized_dfs = [standardize_dataframe(df, common_columns) for df in dataframes_list]
+
+# Optionally, you can concatenate all standardized DataFrames into a single DataFrame
+combined_standardized_df = pd.concat(standardized_dfs, ignore_index=True)
+
+# Print the combined standardized DataFrame
+print(combined_standardized_df)
+
+# DBV1Wis23 = First Version of Database consists of 2023 from Jan to mid Nov Station are: Appleton, Arcadia, Kenosha, Manitowish, Neenah, Tipler
+DB_file_name = './CleanDB/DBV1Wis23.csv'
+with open(DB_file_name, "w") as file:
+    formatted_df = combined_standardized_df.to_csv(index=False, encoding='utf-8')
+    # Write the DataFrame to a text file with formatting options
+    file.write(formatted_df)

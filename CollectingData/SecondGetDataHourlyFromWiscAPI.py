@@ -22,7 +22,7 @@ credentials = {
 
 response = requests.post(request_URL, data=credentials)
 print (response)
-
+List_of_approved=[]
 for station in Remaining_stations:
     print("HHHHHHHHHHHHHHHHHHHHHHHHHHH Station HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH ")
     Station_name = str(station["StationName"])
@@ -57,7 +57,7 @@ for station in Remaining_stations:
     ## write the date of each station in a txt file with the name of the staion
 
 
-    for month in range(1,13):
+    for month in range(1,6):
         if month < 10: month = "0" + str(month)
         else: month = str(month)
         structured_data = []
@@ -69,7 +69,7 @@ for station in Remaining_stations:
 
                 if day < 10: day = "0" + str(day)
                 else: day = str(day)
-                for hour in range (0, 1):
+                for hour in range (0, 2):
                     if hour < 9 :
                         hour_from = "0" + str(hour)
                         hour_to = "0" + str(hour+1)
@@ -80,7 +80,7 @@ for station in Remaining_stations:
                       hour_from = str(hour)
                       hour_to = str(hour + 1)
                     print ("month: ", month ,"  day: ", day, "  hour: ", hour_from )
-                    timeS = "from_time=2023-" + month + "-" + day + "T" + hour_from + "%3A00%3A00&to_time=2023-" + month + "-" + day + "T" + hour_to + "%3A00%3A00"
+                    timeS = "from_time=2022-" + month + "-" + day + "T" + hour_from + "%3A00%3A00&to_time=2023-" + month + "-" + day + "T" + hour_to + "%3A00%3A00"
 
 
                     try:
@@ -146,7 +146,16 @@ for station in Remaining_stations:
 
                         df = pd.DataFrame(structured_data)
                         print(df)
+                        # Check if any column named "Surface Temperature" or starting with "Surface" has a value other than 0.00
+                        surface_columns = [col for col in df.columns if
+                                           col == 'Surface Temperature' or col.startswith('Surface')]
+                        filtered_df = df[surface_columns]
 
+                        if (filtered_df != 0.00).any().any():
+                            List_of_approved.append(Station_name)
+                            print (f"{Station_name} Approved")
+                        else:
+                            print(f"{Station_name} All values in the specified columns are 0.00.")
 
 
 
@@ -167,3 +176,5 @@ for station in Remaining_stations:
             formatted_df = df.to_string(index=False)
             # Write the DataFrame to a text file with formatting options
             file.write(formatted_df)
+
+print (List_of_approved)

@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import re
-from DataCollection.Wisc2023.Locations import location_of_stations
+from Step2DataCollection.Wisc2023.Locations import location_of_stations
 import numpy as np
 
 
@@ -30,8 +30,8 @@ def extract_station_name(filename):
     return filename.split('.')[1]
 
 # Station_under_review
-# your_directory_path = "C:/Users/zmx5fy/SurafceTempPrediction/DataCollection/Station_under_review//"
-your_directory_path = "C:/Users/zmx5fy/SurafceTempPrediction/DataCollection/Wisc2023/"
+# your_directory_path = "C:/Users/zmx5fy/SurafceTempPrediction/Step2DataCollection/Station_under_review//"
+your_directory_path = "C:/Users/zmx5fy/SurafceTempPrediction/Step2DataCollection/Wisc2023/"
 
 
 # Mapping station names to their information
@@ -58,6 +58,7 @@ def standardize_dataframe(df, common_columns):
     for col in common_columns:
         if col not in df.columns:
             df[col] = np.nan
+            print ('*****************', col)
 
     # Reorder and select the columns to match the standard format
     standardized_df = df[common_columns]
@@ -68,8 +69,8 @@ def standardize_dataframe(df, common_columns):
 common_columns = [
     'MeasureTime',
     'Rel. Humidity%',
-    'Air Temperature°F',
-    'Surface Temperature°F',
+    'Air TemperatureF',
+    'Surface TemperatureF',
     'Wind Speed (act)mph',
     'Precipitation Intensityin/h',
     'Saline Concentration%',
@@ -91,7 +92,7 @@ combined_standardized_df = pd.concat(standardized_dfs, ignore_index=True)
 print(combined_standardized_df)
 
 # DBV1Wis23 = First Version of Database consists of 2023 from Jan to mid Nov Station are: Appleton, Arcadia, Kenosha, Manitowish, Neenah, Tipler
-DB_file_name = './CleanDB/DBV1Wis23.csv'
+DB_file_name = 'CleanDB/DBV1Wis23.csv'
 with open(DB_file_name, "w") as file:
     formatted_df = combined_standardized_df.to_csv(index=False, encoding='utf-8')
     # Write the DataFrame to a text file with formatting options

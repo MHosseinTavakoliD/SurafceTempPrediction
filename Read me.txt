@@ -1,6 +1,6 @@
 First step:
     Gathering data
-    folder: CollectingData
+    folder: Step1CollectingData
         FirstGetStationsFromWisconsinAPI.py
             Terget: preparing a list of stations from Wisconsin API
             This file gets the inforamtion (station ID) and name of each station (commented out).
@@ -14,7 +14,7 @@ First step:
             Right now, the data captured monthly and saves in the folder "records"
 
 Second Step:
-    folder: DataCollection
+    folder: Step2DataCollection
         Here is basically, where we store the data from stations with good readings. So far, we just have the data from
         Wisconsin 2023 from Jan to Mid Nov. every 5 minutes
 
@@ -39,6 +39,12 @@ Third Step:
             The standard data is saved in the CleanDB folder as a CSV file. There is a little visualization/description in the CleanDB folder
 
 Fourth Step:
-    folder:
+    folder: Step4BuildingupDBforML
     Target: Clustering the data for using in the ML
         Clustering: location, data continuity, removing excess data (current data is every 10 min we want it every hour)
+        file: DBforMLgenerationBeforeCleaning.py
+            In this file we draw the hourly filterd data and stored the image in the folder: MonthlyGraphsHourlyBeforeCleaning
+            In these graphs, we saw that some points are zero, so in a separate file I will do all again and also remove the zeros
+        file: DBforMLgenerationAfterCleaning.py
+            As mentioned, in this code, I removed the zeros and replace it with an average of a reading before and a reading after, if it is
+            just one zero in between, if there are more than one zero, ....

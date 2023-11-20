@@ -3,7 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 # Load your data
-df = pd.read_csv('C:/Users/zmx5fy/SurafceTempPrediction/DataCleaning/CleanDB/DBV1Wis23.csv', encoding='ISO-8859-1')
+df = pd.read_csv('/Archive/DBV1Wis23.csv', encoding='ISO-8859-1')
 
 # Convert 'MeasureTime' to datetime if it's not already
 df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])

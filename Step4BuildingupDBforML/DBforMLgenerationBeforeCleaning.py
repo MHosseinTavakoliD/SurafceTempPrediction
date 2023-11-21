@@ -59,7 +59,7 @@ def plot_temperature_by_station_and_month(df, output_directory):
             plt.close()  # Close the plot to prevent it from displaying
 
 # Assuming 'DBV1Wis23.csv' is your csv file with the hourly data already filtered
-df = pd.read_csv('C:/Users/zmx5fy/SurafceTempPrediction/DataCleaning/CleanDB/DBV1Wis23.csv', encoding='ISO-8859-1')
+df = pd.read_csv('/Step3DataCleaning/CleanDB/DBV1Wis23.csv', encoding='ISO-8859-1')
 
 # Convert 'MeasureTime' to datetime format for filtering
 df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])
@@ -72,4 +72,7 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.expand_frame_repr', False)
 
 # Calling the function with the hourly data
-plot_temperature_by_station_and_month(df_hourly, out_dir)
+# plot_temperature_by_station_and_month(df_hourly, out_dir)
+
+# Save the processed DataFrame
+df_hourly.to_csv('BeforeProcessedHourly_dataset.csv', index=False)

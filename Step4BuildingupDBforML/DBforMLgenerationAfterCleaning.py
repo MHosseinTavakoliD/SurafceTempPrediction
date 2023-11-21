@@ -1,66 +1,64 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import os
-from pandas.plotting import register_matplotlib_converters
 
-register_matplotlib_converters()
+from Step4BuildingupDBforML.DBforMLgenerationBeforeCleaning import plot_temperature_by_station_and_month
 
-out_dir = 'MonthlyGraphsHourlyBeforeCleaning/'
+# Load your dataset
+df = pd.read_csv('/Step4BuildingupDBforML/MonthlyGraphsHourlyBeforeCleaning/BeforeProcessedHourly_dataset.csv')
 
-def plot_temperature_for_kenosha(df, output_directory):
-    # Filter for the Kenosha station
-    df_kenosha = df[df['Station_name'] == 'Kenosha'].copy()
+def modify_zeros(df, column):
+    processed_dfs = []
+    drop_indices_global = []
+    for station in df['Station_name'].unique():
+        print (station)
+        df_station = df[df['Station_name'] == station].copy()
+        # print (df_station)
+        df_station.sort_values('MeasureTime', inplace=True)
 
-    # Ensure data is sorted by time (important for plotting)
-    df_kenosha.sort_values('MeasureTime', inplace=True)
-    print(df_kenosha)
-    # Check if output directory exists, if not, create it
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
+        start_zero = None
 
-    # Loop through each month
-    for month in df_kenosha['MeasureTime'].dt.month.unique():
-        print (month)
-        df_month = df_kenosha[df_kenosha['MeasureTime'].dt.month == month].copy()
+        for index, row in df_station.iterrows():
+            # print (f"index: {index} . row:  {row}")
+            if row[column] == 0:
+                start_zero = index if start_zero is None else start_zero
+            else:
+                if start_zero is not None:
+                    zero_length = index - start_zero
+                    if zero_length >= 10:
+                        # df_station.drop(df_station.index[start_zero:index], inplace=True)
+                        drop_indices_global.extend(range(start_zero, index))
+                    else:
+                        increment = (row[column] - df_station.loc[start_zero - 1, column]) / (zero_length + 1)
+                        for i in range(start_zero, index):
+                            df_station.loc[i, column] = df_station.loc[start_zero - 1, column] + (i - start_zero) * increment
+                    start_zero = None
+        # Handling end cases: if start_zero is not None at the end, it means the series of zeros continues till the end
+        # Depending on requirement, either drop these rows or leave as is
+                # Drop the accumulated rows
 
-        # Plotting
-        plt.figure(figsize=(20, 6))
-        plt.plot(df_month['MeasureTime'], df_month['Air TemperatureF'], label='Air TemperatureF', alpha=0.5)
-        plt.plot(df_month['MeasureTime'], df_month['Surface TemperatureF'], label='Surface TemperatureF', alpha=0.5)
+        processed_dfs.append(df_station)
+    print (drop_indices_global)
+    processed_dfs = pd.concat(processed_dfs)
+    # processed_dfs = processed_dfs.drop(drop_indices_global)
+    return processed_dfs, drop_indices_global
 
-        # Set fixed y-axis range
-        plt.ylim(-40, 120)
 
-        plt.title(f'Air and Surface Temperature for Kenosha - Month: {month} (Hourly Data)')
-        plt.xlabel('Time')
-        plt.ylabel('Temperature (°F)')
-        plt.legend()
-        plt.grid(True)
 
-        # Formatting the date on the x-axis
-        plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-        plt.gcf().autofmt_xdate()  # Rotate date labels
+# df.to_csv('processed_datasetTestBefore.csv', index=False)
 
-        # Save the plot with a wider format and fixed y-axis range
-        plot_filename = f"Kenosha_Month{month}_HourlyData.png"
-        plt.savefig(os.path.join(output_directory, plot_filename))
-        plt.close()  # Close the plot
+processed_df, Air_drop_list      = modify_zeros(df, 'Air TemperatureF')
+print ("Done Air Temp cleaning")
+processed_df,  Surface_drop_list = modify_zeros(processed_df, 'Surface TemperatureF')
+print ("Done Surface Temp cleaning")
+All_drop_list = list(set(Air_drop_list + Surface_drop_list))
 
-# Assuming 'DBV1Wis23.csv' is your csv file with the hourly data already filtered
-df = pd.read_csv('C:/Users/zmx5fy/SurafceTempPrediction/DataCleaning/CleanDB/DBV1Wis23.csv', encoding='ISO-8859-1')
+# Drop the rows and save the processed DataFrame
+processed_df = processed_df.drop(All_drop_list)
 
+processed_df.to_csv('AfterProcessedHourly_dataset.csv', index=False)
+
+df_draw = pd.read_csv('MonthlyGraphsHourlyAfterCleaning/AfterProcessedHourly_dataset.csv')
 # Convert 'MeasureTime' to datetime format for filtering
-df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])
+df_draw['MeasureTime'] = pd.to_datetime(df_draw['MeasureTime'])
 
-# Filtering for hourly data
-df_hourly = df[df['MeasureTime'].dt.minute == 0]
 
-print (df_hourly)
-# Set display options for pandas
-pd.set_option('display.max_columns', None)
-pd.set_option('display.expand_frame_repr', False)
-
-# Call the function with the hourly data for Kenosha
-plot_temperature_for_kenosha(df_hourly, out_dir)
+plot_temperature_by_station_and_month(df_draw, 'MonthlyGraphsHourlyAfterCleaning/')

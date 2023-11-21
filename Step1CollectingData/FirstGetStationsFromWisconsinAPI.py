@@ -110,13 +110,11 @@ import pandas as pd
 #  {"StationId":"2481b159-c715-4ec5-aeb4-253bcf96b5c1","StationName":"La Crosse"}, no sensor
 # {"StationId":"de92195d-9b17-4060-a110-0c2848d9a669","StationName":"Woodruff"} , no subsurface temp
 
-Good_stations_for_2022 = {"Appleton", "Kenosha", "Tipler" }
+Good_stations_for_2022 = {"Appleton", "Kenosha", "Tipler" , "Arcadia", "Neenah"}
 Remaining_stations =[
 
 
 
-{"StationId":"abc51468-dd91-40cc-896d-fc45026c8c2f","StationName":"Menomonee Falls"},
-{"StationId":"54fbfc52-2210-438c-940f-80232d7aafe4","StationName":"Knowlton"},
 ]
 
 # {"StationId":"0a405208-b0e9-44ae-a2f0-ae91daac5962","StationName":"Mt. Pleasant"},
@@ -161,3 +159,5 @@ Remaining_stations =[
 # {"StationId": "5bc44226-830a-44a0-9b5e-54014a067f58", "StationName": "Haugen"},
 # {"StationId":"476c1965-d256-4e2c-a0da-a21ff4c75c71","StationName":"Oshkosh"},
 # {"StationId":"ee003867-a6d7-420e-880d-96adedaa5113","StationName":"Wausau"},
+# {"StationId":"abc51468-dd91-40cc-896d-fc45026c8c2f","StationName":"Menomonee Falls"},
+# {"StationId":"54fbfc52-2210-438c-940f-80232d7aafe4","StationName":"Knowlton"},

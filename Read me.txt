@@ -40,7 +40,7 @@ Third Step:
 
 Fourth Step:
     folder: Step4BuildingupDBforML
-    Target: Clustering the data for using in the ML
+    Target: Modifying and clearing the data for using in the ML
         Clustering: location, data continuity, removing excess data (current data is every 10 min we want it every hour)
         file: DBforMLgenerationBeforeCleaning.py
             In this file we draw the hourly filterd data and stored the image in the folder: MonthlyGraphsHourlyBeforeCleaning
@@ -48,3 +48,7 @@ Fourth Step:
         file: DBforMLgenerationAfterCleaning.py
             As mentioned, in this code, I removed the zeros and replace it with an average of a reading before and a reading after, if it is
             just one zero in between, if there are more than ten zero (ten hours), the data row is removed
+
+Fifth Step:
+    folder: Step5RNN_LSTM_model
+    Target: Creating the Step5RNNLSTMmodel

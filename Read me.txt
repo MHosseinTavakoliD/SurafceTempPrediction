@@ -48,7 +48,11 @@ Fourth Step:
         file: DBforMLgenerationAfterCleaning.py
             As mentioned, in this code, I removed the zeros and replace it with an average of a reading before and a reading after, if it is
             just one zero in between, if there are more than ten zero (ten hours), the data row is removed
+        file: DBforMLaddingPredictionColAfterAfterCleaning.py
+            I added columns regarding the predictions. In the LSTM modeling, I noticed that we need to add prediction columns to take them into account for predicting the
+            surface temperature
 
 Fifth Step:
     folder: Step5RNN_LSTM_model
     Target: Creating the Step5RNNLSTMmodel
+    file: train1.py is the model based on the dataset without the prediction columns added

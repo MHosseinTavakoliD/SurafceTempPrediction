@@ -3,6 +3,7 @@ import json
 import pandas as pd
 # from listOfSensors import Sensors_data
 import openpyxl
+# Husky#1MichiganTech
 from FirstGetStationsFromWisconsinAPI import Remaining_stations
 from requests.exceptions import Timeout
 
@@ -16,8 +17,8 @@ Station_name = "Newville"
 request_URL = "https://www.viewmondousa.com/Token"
 credentials = {
     "grant_type": "password",
-    "Username": "MichiganTech",
-    "Password": "Husky#1"
+    "Username": "******",
+    "Password": "*****"
 }
 
 response = requests.post(request_URL, data=credentials)

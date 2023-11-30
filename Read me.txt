@@ -57,3 +57,4 @@ Fifth Step:
     Target: Creating the Step5RNNLSTMmodel
     file: train1.py is the model based on the dataset without the prediction columns added
     file: train2.py is the models based on the dataset with prediction columns (e.g. we have columns of 1hr, .., 6hr forecast columns for predicting the suraface temp in the next 6 hours
+    I've checked two structures of LSTM one is very simple, and the next one is more complicated

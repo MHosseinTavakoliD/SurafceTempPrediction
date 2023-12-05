@@ -26,7 +26,22 @@ print(tf.config.list_physical_devices('GPU'))
 # Load and preprocess data
 df = pd.read_csv(DataSource_file)
 df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])
+# Extract time components
+df['hour'] = df['MeasureTime'].dt.hour
+df['day_of_week'] = df['MeasureTime'].dt.dayofweek
+df['day_of_month'] = df['MeasureTime'].dt.day
+df['month'] = df['MeasureTime'].dt.month
+df['year'] = df['MeasureTime'].dt.year
 
+# Encode cyclical features
+def encode_cyclical_feature(df, col, max_vals):
+    df[col + '_sin'] = np.sin(2 * np.pi * df[col]/max_vals)
+    df[col + '_cos'] = np.cos(2 * np.pi * df[col]/max_vals)
+    return df
+
+df = encode_cyclical_feature(df, 'hour', 24)
+df = encode_cyclical_feature(df, 'day_of_week', 7)
+df = encode_cyclical_feature(df, 'month', 12)
 # Function to create dataset
 def create_dataset(data, look_back=24, forecast_horizon=12):
     unique_stations = data['Station_name'].unique()

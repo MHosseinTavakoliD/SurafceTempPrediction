@@ -7,27 +7,49 @@ from keras.layers import Dense, Dropout, LayerNormalization, MultiHeadAttention,
 from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+from tqdm import tqdm
 # Parameters
-Epoch = 1000
-LR = 0.005
+Epoch = 20
+LR = 0.05
 forecast_horizon = 6
 look_back = 24
-file_model_save = 'TransformerSurfaceTempForecastModel6H.h5'
+file_model_save = 'TransformerSurfaceTempForecastModel6H.keras'
 DataSource_file = 'C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/DBforMLaddingPredictionColAfterAfterCleaning/FinalDatasetForML6HourForecast.csv'
 
 # Load and preprocess data
 df = pd.read_csv(DataSource_file)
 df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])
 
+# Check for missing data
+print(df.isnull().sum())
+
+# Extract time components
+df['hour'] = df['MeasureTime'].dt.hour
+df['day_of_week'] = df['MeasureTime'].dt.dayofweek
+df['day_of_month'] = df['MeasureTime'].dt.day
+df['month'] = df['MeasureTime'].dt.month
+df['year'] = df['MeasureTime'].dt.year
+
+# Encode cyclical features
+def encode_cyclical_feature(df, col, max_vals):
+    df[col + '_sin'] = np.sin(2 * np.pi * df[col]/max_vals)
+    df[col + '_cos'] = np.cos(2 * np.pi * df[col]/max_vals)
+    return df
+
+df = encode_cyclical_feature(df, 'hour', 24)
+df = encode_cyclical_feature(df, 'day_of_week', 7)
+df = encode_cyclical_feature(df, 'month', 12)
+
 # Function to create dataset
-def create_dataset(data, look_back=24, forecast_horizon=12):
+def create_dataset(data, look_back=24, forecast_horizon=6):
     unique_stations = data['Station_name'].unique()
     X, Y, stations = [], [], []
     for station in unique_stations:
         print (station)
         station_data = data[data['Station_name'] == station].copy()
         station_data.sort_values('MeasureTime', inplace=True)
-        for i in range(len(station_data) - look_back - forecast_horizon + 1):
+        loop_range = len(station_data) - look_back - forecast_horizon + 1
+        for i in tqdm(range(loop_range), desc=f"Processing Data for {station}", leave=False):
             current_time = station_data.iloc[i + look_back - 1]['MeasureTime']
             future_time = station_data.iloc[i + look_back]['MeasureTime']
             if (future_time - current_time).total_seconds() > 3600:
@@ -53,7 +75,7 @@ for station in np.unique(station_names):
     val_Y[station] = Y_val
 print (X_val.shape)
 # Transformer Block
-def TransformerBlock(embed_dim, num_heads, ff_dim, rate=0.1):
+def TransformerBlock(embed_dim, num_heads, ff_dim, rate=0.001):
     inputs = Input(shape=(None, embed_dim))
     attention_output = MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim)(inputs, inputs)
     attention_output = Dropout(rate)(attention_output)
@@ -63,7 +85,7 @@ def TransformerBlock(embed_dim, num_heads, ff_dim, rate=0.1):
     ffn_output = Dropout(rate)(ffn_output)
     return Model(inputs=inputs, outputs=LayerNormalization(epsilon=1e-6)(out1 + ffn_output))
 
-def build_transformer_model(input_shape, head_size, num_heads, ff_dim, num_transformer_blocks, mlp_units, dropout=0.1, mlp_dropout=0.1):
+def build_transformer_model(input_shape, head_size, num_heads, ff_dim, num_transformer_blocks, mlp_units, dropout=0.1, mlp_dropout=0.3):
     inputs = Input(shape=input_shape)
     x = Dense(head_size)(inputs)  # Ensuring the embedding dimension matches
     for _ in range(num_transformer_blocks):
@@ -76,10 +98,10 @@ def build_transformer_model(input_shape, head_size, num_heads, ff_dim, num_trans
     return Model(inputs=inputs, outputs=outputs)
 
 # Update model parameters if necessary
-embed_dim = 34  # Ensure this matches the last dimension of your input data
-num_heads = 2
-ff_dim = 136
-num_transformer_blocks = 4
+embed_dim = 45  # Ensure this matches the last dimension of your input data
+num_heads = 6
+ff_dim = 64
+num_transformer_blocks = 1
 mlp_units = [128]
 
 # Combine all stations into one dataset
@@ -87,6 +109,7 @@ combined_train_X = np.concatenate(list(train_X.values()))
 combined_train_Y = np.concatenate(list(train_Y.values()))
 combined_val_X = np.concatenate(list(val_X.values()))
 combined_val_Y = np.concatenate(list(val_Y.values()))
+
 
 # Train the model on the combined dataset
 model = build_transformer_model(
@@ -139,6 +162,7 @@ combined_val_X = np.concatenate(list(val_X.values()))
 
 # Predict using the combined validation data
 predictions = model.predict(combined_val_X)
+
 
 # Combine all validation target data into one array
 combined_val_Y = np.concatenate(list(val_Y.values()))

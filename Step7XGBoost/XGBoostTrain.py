@@ -5,9 +5,11 @@ import xgboost as xgb
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import matplotlib.pyplot as plt
 import joblib
-
+forecast_horizon = 6
+look_back = 24
+Save_model = 'xgboost_model1Pred6h.pkl'
 # Load and preprocess data
-DataSource_file = 'C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/DBforMLaddingPredictionColAfterAfterCleaning/FinalDatasetForML12HourForecast.csv'
+DataSource_file = 'C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/DBforMLaddingPredictionColAfterAfterCleaning/FinalDatasetForML6HourForecast.csv'
 df = pd.read_csv(DataSource_file)
 df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])
 
@@ -15,7 +17,7 @@ df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])
 # Add additional preprocessing if necessary
 
 # Define your function to create the dataset for XGBoost
-def create_dataset_for_xgboost(data, look_back=24, forecast_horizon=12):
+def create_dataset_for_xgboost(data, look_back=look_back, forecast_horizon=forecast_horizon):
     unique_stations = data['Station_name'].unique()
     X, Y = [], []
 
@@ -34,8 +36,8 @@ def create_dataset_for_xgboost(data, look_back=24, forecast_horizon=12):
 
 
 # Create dataset
-look_back = 24
-forecast_horizon = 12
+
+
 X, Y = create_dataset_for_xgboost(df, look_back=look_back, forecast_horizon=forecast_horizon)
 
 # Splitting the data
@@ -56,7 +58,7 @@ eval_set = [(X_train, Y_train), (X_val, Y_val)]
 model.fit(X_train, Y_train, eval_metric="rmse", eval_set=eval_set, verbose=True, early_stopping_rounds=10)
 
 # Save the model
-joblib.dump(model, 'xgboost_model1Pred12h.pkl')
+# joblib.dump(model, Save_model)
 
 # Visualization of Metrics
 results = model.evals_result()
@@ -80,8 +82,8 @@ print(f'Mean Absolute Error: {val_mae}')
 
 # Visualization of Predicted vs Actual Values
 # Assuming 'look_back' is 24 hours and 'forecast_horizon' is also 6 hours
-look_back = 24
-forecast_horizon = 12
+
+
 list_index = [134, 462, 368, 529, 453, 375]  # Replace with indices of your choice
 feature_index_for_surface_temp = 2  # Index for the surface temperature feature
 number_of_features = X_train.shape[1] // look_back

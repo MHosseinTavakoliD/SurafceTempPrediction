@@ -10,9 +10,11 @@ from tqdm import tqdm
 # Load and preprocess data
 df = pd.read_csv('C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/DBforMLaddingPredictionColAfterAfterCleaning/FinalDatasetForML6HourForecast.csv')  # Update this path
 df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])
-
+forecast_horizon=6
+look_back=24
+Learning_Rate = 0.1
 # Function to create dataset
-def create_dataset(data, look_back=6, forecast_horizon=6):
+def create_dataset(data, look_back=look_back, forecast_horizon=forecast_horizon):
     unique_stations = data['Station_name'].unique()
     X, Y = [], []
     surface_temp_index = data.columns.get_loc("Surface TemperatureF")  # Replace with your actual column name
@@ -33,6 +35,8 @@ def create_dataset(data, look_back=6, forecast_horizon=6):
 
 # Create dataset
 X, Y = create_dataset(df)
+print ("X", X.shape)
+print ("Y", Y.shape)
 
 # Splitting the data
 X_train, X_val, Y_train, Y_val = train_test_split(X, Y, test_size=0.2, random_state=42)
@@ -43,14 +47,35 @@ X_val_tensor = torch.tensor(X_val, dtype=torch.float32)
 Y_train_tensor = torch.tensor(Y_train, dtype=torch.float32)
 Y_val_tensor = torch.tensor(Y_val, dtype=torch.float32)
 
+
+
+
 print ("X_train_tensor", X_train_tensor.shape)
 print("X_val_tensor", X_val_tensor.shape)
 print("Y_train_tensor", Y_train_tensor.shape)
 print("Y_val_tensor", Y_val_tensor.shape)
 
+
+# Step 1: Identify and remove rows with NaN in training data
+nan_mask_train = torch.isnan(X_train_tensor).any(dim=2).any(dim=1)
+X_train_tensor = X_train_tensor[~nan_mask_train]
+Y_train_tensor = Y_train_tensor[~nan_mask_train]
+
+# Step 2: Identify and remove rows with NaN in validation data
+nan_mask_val = torch.isnan(X_val_tensor).any(dim=2).any(dim=1)
+X_val_tensor = X_val_tensor[~nan_mask_val]
+Y_val_tensor = Y_val_tensor[~nan_mask_val]
+
+# Check the new shapes of the tensors
+print("Shape of X_train_tensor after NaN removal:", X_train_tensor.shape)
+print("Shape of Y_train_tensor after NaN removal:", Y_train_tensor.shape)
+print("Shape of X_val_tensor after NaN removal:", X_val_tensor.shape)
+print("Shape of Y_val_tensor after NaN removal:", Y_val_tensor.shape)
+
+
 # Define a Transformer Model
 class TimeSeriesTransformer(nn.Module):
-    def __init__(self, num_features, num_layers, num_heads, dim_feedforward, dropout=0.1, num_output_features=1):
+    def __init__(self, num_features, num_layers, num_heads, dim_feedforward, dropout=0.1, num_output_features=forecast_horizon):
         super(TimeSeriesTransformer, self).__init__()
         self.transformer = nn.Transformer(
             d_model=num_features,
@@ -60,37 +85,46 @@ class TimeSeriesTransformer(nn.Module):
             dim_feedforward=dim_feedforward,
             dropout=dropout
         )
-        self.linear = nn.Linear(num_features, num_output_features)
+        self.output_layer = nn.Linear(num_features, num_output_features)  # Using output_layer for clarity
 
-    def forward(self, src, tgt, src_mask=None, tgt_mask=None, src_key_padding_mask=None, tgt_key_padding_mask=None):
-        output = self.transformer(src, tgt, src_mask, tgt_mask, src_key_padding_mask, tgt_key_padding_mask)
-        return self.linear(output[-1])  # Assuming you want the final step's output for each input sequence
+    def forward(self, src):
+        # Assuming src is of shape [batch_size, sequence_length, num_features]
+        memory = self.transformer.encoder(src)
+        output = self.output_layer(memory[:, -1, :])  # Taking the last time step
+        return output
+
 
 # Initialize the model
 num_features = X_train_tensor.shape[2]  # Number of features
-model = TimeSeriesTransformer(num_features, num_layers=3, num_heads=2, dim_feedforward=2048, dropout=0.1, num_output_features=1)
+print ("num_features",num_features)
+model = TimeSeriesTransformer(num_features, num_layers=3, num_heads=2, dim_feedforward=2048, dropout=0.1, num_output_features=forecast_horizon)
 
 # Training and evaluation functions
-def train_epoch(model, train_loader, optimizer, criterion):
+def train_epoch(model, train_loader, optimizer, criterion, clip_value=1.0):
+    # print ("Call: train_epoch")
     model.train()
     total_loss = 0
     for src, tgt in train_loader:
         optimizer.zero_grad()
-        # Assuming the last dimension of tgt is 1
-        output = model(src, tgt[:, :-1])  # Do not include the last time step of tgt which is to be predicted
-        loss = criterion(output, tgt[:, -1])
+        output = model(src)
+        # Ensure tgt is reshaped or sliced to match output shape
+        loss = criterion(output, tgt)
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), clip_value)  # Gradient clipping
+
         optimizer.step()
         total_loss += loss.item()
     return total_loss / len(train_loader)
 
 def evaluate(model, val_loader, criterion):
+    # print("Call: evaluate")
     model.eval()
     total_loss = 0
     with torch.no_grad():
         for src, tgt in val_loader:
-            output = model(src, tgt[:, :-1])  # Do not include the last time step of tgt
-            loss = criterion(output, tgt[:, -1])
+            output = model(src)
+            # Ensure tgt is reshaped or sliced to match output shape
+            loss = criterion(output, tgt)
             total_loss += loss.item()
     return total_loss / len(val_loader)
 
@@ -99,11 +133,11 @@ train_dataset = TensorDataset(X_train_tensor, Y_train_tensor)
 val_dataset = TensorDataset(X_val_tensor, Y_val_tensor)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+optimizer = torch.optim.Adam(model.parameters(), lr=Learning_Rate)
 criterion = nn.MSELoss()
 
 train_losses, val_losses = [], []
-for epoch in range(10):
+for epoch in range(200):
     train_loss = train_epoch(model, train_loader, optimizer, criterion)
     val_loss = evaluate(model, val_loader, criterion)
     train_losses.append(train_loss)
@@ -128,19 +162,24 @@ plt.show()
 # Prediction
 predictions = []
 model.eval()
+
 with torch.no_grad():
-    for X, _ in val_loader:
-        output = model(X, torch.zeros_like(X))  # You might need to adjust this line if your model is set up differently
+    for X in val_loader:
+        output = model(X[0])  # X[0] is the source tensor
         predictions.extend(output.cpu().numpy())
 predictions = np.array(predictions).squeeze()
 surface_temp_index = 2
-look_back = 6
-forecast_horizon = 6
+
 # Visualization of Predictions with past observations
 for random_index in [134, 462, 368, 529, 453, 375]:
     past_data = X_val_tensor[random_index, :, surface_temp_index].numpy()
-    actual_data = Y_val_tensor[random_index, :, 0].numpy()
+    actual_data = Y_val_tensor[random_index].numpy()  # Assuming Y_val_tensor is [num_samples, forecast_horizon]
     predicted_data = predictions[random_index]
+
+    print (random_index)
+    print ("past_data", past_data.shape, past_data)
+    print ("actual_data", actual_data.shape,actual_data)
+    print ("predicted_data", predicted_data.shape, predicted_data)
 
     plt.figure(figsize=(15, 6))
     plt.plot(range(-look_back, 0), past_data, label='Past', color='green')

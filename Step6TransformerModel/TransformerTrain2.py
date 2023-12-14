@@ -38,7 +38,7 @@ df = encode_cyclical_feature(df, 'month', 12)
 # df_scaled = scaler.fit_transform(df)
 
 # Windowing function
-# Windowing function
+
 def create_windows(data, input_width, label_width, shift, target_column='Surface TemperatureF'):
     X = []
     y = []

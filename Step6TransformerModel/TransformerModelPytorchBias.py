@@ -14,7 +14,7 @@ df = pd.read_csv('C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/D
 df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])
 forecast_horizon=6
 look_back=24
-Learning_Rate = 0.001
+Learning_Rate = 0.01
 Epoch = 50
 batch_size = 32
 # Function to create dataset
@@ -80,7 +80,7 @@ print("Shape of Y_val_tensor after NaN removal:", Y_val_tensor.shape)
 
 # Define a Transformer Model
 class TimeSeriesTransformer(nn.Module):
-    def __init__(self, num_features, num_layers, num_heads, dim_feedforward, dropout=0.1, num_output_features=forecast_horizon):
+    def __init__(self, num_features, num_layers, num_heads, dim_feedforward, dropout=0.1, num_output_features=forecast_horizon, bias=False):
         super(TimeSeriesTransformer, self).__init__()
         self.transformer = nn.Transformer(
             d_model=num_features,
@@ -88,7 +88,8 @@ class TimeSeriesTransformer(nn.Module):
             num_encoder_layers=num_layers,
             num_decoder_layers=num_layers,
             dim_feedforward=dim_feedforward,
-            dropout=dropout
+            dropout=dropout,
+            bias=bias  # Set bias to False to turn off biases
         )
         self.output_layer = nn.Linear(num_features, num_output_features)  # Using output_layer for clarity
 
@@ -102,7 +103,7 @@ class TimeSeriesTransformer(nn.Module):
 # Initialize the model
 num_features = X_train_tensor.shape[2]  # Number of features
 print ("num_features",num_features)
-model = TimeSeriesTransformer(num_features, num_layers=1, num_heads=2, dim_feedforward=2048, dropout=0.1, num_output_features=forecast_horizon)
+model = TimeSeriesTransformer(num_features, num_layers=4, num_heads=2, dim_feedforward=2048, dropout=0.1, num_output_features=forecast_horizon, bias=False)
 
 # Training and evaluation functions
 def train_epoch(model, train_loader, optimizer, criterion, clip_value=1.0):
@@ -158,14 +159,14 @@ for epoch in range(Epoch):
     # scheduler.step()
 
 # Save model
-torch.save(model.state_dict(), 'model_state_dict.pt')
+torch.save(model.state_dict(), 'TransformerPytorchBiasFalse.pt')
 # torch.save(model, 'model.pt')
 
 # Visualization of training and validation loss
 plt.figure(figsize=(12, 4))
 plt.subplot(1, 2, 1)
-plt.plot(train_losses[1:], label='Train Loss')
-plt.plot(val_losses[1:], label='Validation Loss')
+plt.plot(train_losses, label='Train Loss')
+plt.plot(val_losses, label='Validation Loss')
 plt.title('Training and Validation Loss')
 plt.xlabel('Epoch')
 plt.ylabel('MSE Loss')

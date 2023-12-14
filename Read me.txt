@@ -66,7 +66,13 @@ Sixth Step:
     Pytorch needed to have the same target and source size. which was kinda impossible or impractical for such database
     Keras was ok, but the output was the same for all the predictions. I tried some ways around, working on the hyperparamters, epoch range, and coding but
     the problem is not solved yet
+    Update: Fixed pytorch got good results: first removed nan rows, then use a very simple model structure
 
 Seventh Step:
     folder: Step7XGBosst
-    Target: Creating the XGBosst model
+    Target: Creating the XGBosst model: done
+
+Eighth Step:
+    folder: Step8LightGBM
+    Target: Creating the LightGBM model:
+    This model can predict just one output, so for each hour forecast I trained a separate model.

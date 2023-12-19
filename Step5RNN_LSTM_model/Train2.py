@@ -11,11 +11,19 @@ from keras.layers import Bidirectional, BatchNormalization
 
 
 # initial parameters:
-Epoch = 250
-LR = 0.0005
+
+# LR = 0.0005
 forecast_horizon = 24
 look_back = 24
-file_model_save = 'RNNLSTMV1HourForecast24Model2.h5'
+
+# Model Param:
+Epoch = 250
+units = 100
+batch_size = 8
+dropout_rate = .2
+Learning_rate = 0.0001
+
+# file_model_save = 'RNNLSTMV1HourForecast24Model2.h5'
 DataSource_file = 'C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/DBforMLaddingPredictionColAfterAfterCleaning/FinalDatasetForML24HourForecast.csv'
 # Check if TensorFlow is built with CUDA (GPU support)
 print(tf.test.is_built_with_cuda())
@@ -84,7 +92,8 @@ def create_dataset(data, look_back=24, forecast_horizon=12):
 
 # Create dataset
 X, Y, station_names = create_dataset(df, look_back=look_back, forecast_horizon=forecast_horizon)
-
+num_features = X.shape[2]
+print ("Number of Features",X.shape[2])
 # Splitting the data for each station
 train_X, val_X, train_Y, val_Y = {}, {}, {}, {}
 for station in np.unique(station_names):
@@ -106,31 +115,58 @@ sample_input_shape = next(iter(train_X.values())).shape[1:]
 # model.add(LSTM(50))
 # model.add(Dropout(0.2))
 # model.add(Dense(forecast_horizon))
+# Model Param:
+# units = 100
+# batch_size = 8
+# dropout_rate = .2
+# Learning_rate = 0.0001
 
 # LSTM Model Construction model 2
 model = Sequential()
-model.add(Bidirectional(LSTM(100, return_sequences=True), input_shape=sample_input_shape))
-model.add(Dropout(0.3))
-model.add(BatchNormalization())
-model.add(Bidirectional(LSTM(100, return_sequences=True)))
-model.add(Dropout(0.3))
-model.add(BatchNormalization())
-model.add(Bidirectional(LSTM(100)))
-model.add(Dropout(0.3))
-model.add(BatchNormalization())
-model.add(Dense(50, activation='relu'))
-model.add(Dropout(0.3))
-model.add(Dense(forecast_horizon))  # Assuming your output size is 12
+# "Stacked LSTM"
+model.add(LSTM(units, return_sequences=True, input_shape=sample_input_shape))
+model.add(LSTM(units))
+model.add(Dense(forecast_horizon))
+
+# # model_type == "Bidirectional Deep LSTM":
+# model.add(Bidirectional(LSTM(units, return_sequences=True), input_shape=sample_input_shape))
+# model.add(Bidirectional(LSTM(units)))
+# model.add(Dense(forecast_horizon))
+#
+# # Complex LSTM
+# model.add(Bidirectional(LSTM(units, return_sequences=True), input_shape=sample_input_shape))
+# model.add(LSTM(units))
+# model.add(Dropout(dropout_rate))
+# model.add(Dense(forecast_horizon))
+
+# #  model_type == "Deep LSTM":
+# model.add(LSTM(units, return_sequences=True, input_shape=sample_input_shape))
+# model.add(LSTM(units, return_sequences=True))
+# model.add(LSTM(units))
+# model.add(Dense(forecast_horizon))
+
+# random very complex model
+# model.add(Bidirectional(LSTM(100, return_sequences=True), input_shape=sample_input_shape))
+# model.add(Dropout(0.3))
+# model.add(BatchNormalization())
+# model.add(Bidirectional(LSTM(100, return_sequences=True)))
+# model.add(Dropout(0.3))
+# model.add(BatchNormalization())
+# model.add(Bidirectional(LSTM(100)))
+# model.add(Dropout(0.3))
+# model.add(BatchNormalization())
+# model.add(Dense(50, activation='relu'))
+# model.add(Dropout(0.3))
 
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=LR)
+optimizer = tf.keras.optimizers.Adam(learning_rate=Learning_rate)
 model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=['mse', 'mae'])
 
 # Model Training
-history = model.fit(X_train, Y_train, epochs=Epoch, batch_size=32, validation_data=(X_val, Y_val), verbose=1)
+history = model.fit(X_train, Y_train, epochs=Epoch, batch_size=batch_size, validation_data=(X_val, Y_val), verbose=1)
 
 # After training the model
-model.save(file_model_save)
+# model.save(file_model_save)
 
 # Visualization of Metrics
 plt.figure(figsize=(12, 4))
@@ -192,14 +228,18 @@ feature_index_for_surface_temp = 2
 
 # Reshape X_val_trimmed to have a shape of (number of samples, look_back, num_features)
 # X_val_reshaped = X_val.reshape(X_val.shape[0], look_back, num_features)
-
+from EvalList import Eval_X_List , Eval_Y_List
+np.set_printoptions(threshold=np.inf)
 for i in range(len(list_index)):
-    random_index = list_index[i]
+    X_val_sample = np.array(Eval_X_List[i])
+    Y_val_sample = np.array(Eval_Y_List[i])
+    X_val_sample = X_val_sample.reshape((-1, look_back, num_features))
+    predictions = model.predict(X_val_sample)
 
-    actual_data = Y_val[random_index].flatten()
-    predicted_data = predictions[random_index].flatten()
+    actual_data = Y_val_sample.flatten()
+    predicted_data = predictions.flatten()
 
-    past_surface_temp = X_val[random_index, :, feature_index_for_surface_temp]
+    past_surface_temp = X_val_sample[-1, :, feature_index_for_surface_temp]
 
     plt.figure(figsize=(15, 6))
 
@@ -212,8 +252,16 @@ for i in range(len(list_index)):
     # Plot predicted surface temperature for the forecast horizon
     plt.plot(range(0, len(predicted_data)), predicted_data, label='Predicted', color='red')
 
-    plt.title(f'Surface Temperature Prediction for Station Index: {random_index}')
+    plt.title(f'Surface Temperature Prediction for Station Index: {i}')
     plt.xlabel('Time Steps (Relative to Prediction Point)')
     plt.ylabel('Temperature')
     plt.legend()
     plt.show()
+    print ("***************************")
+    print (i)
+    print (f"Past surface temp: {past_surface_temp}" )
+    print (f"actual_data: {actual_data}")
+    print (f"Predicted data: {predicted_data}")
+
+
+

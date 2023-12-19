@@ -76,3 +76,9 @@ Eighth Step:
     folder: Step8LightGBM
     Target: Creating the LightGBM model:
     This model can predict just one output, so for each hour forecast I trained a separate model.
+
+
+Best Hyperparameters per Model:
+Stacked LSTM: {'units': 100, 'dropout_rate': 0.2, 'batch_size': 8, 'learning_rate': 0.0001}
+Bidirectional Deep LSTM: {'units': 100, 'dropout_rate': 0.1, 'batch_size': 8, 'learning_rate': 0.0001}
+Complex LSTM: {'units': 100, 'dropout_rate': 0.1, 'batch_size': 16, 'learning_rate': 0.0001}

@@ -8,15 +8,32 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 # Recom: make the bias false, have to rebuild the transformer from the scratch....
 # self.transformer = nn.Transformer instead use self.transformer = Transformer.encoder
-
-# Load and preprocess data
-df = pd.read_csv('C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/DBforMLaddingPredictionColAfterAfterCleaning/FinalDatasetForML6HourForecast.csv')  # Update this path
-df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])
-forecast_horizon=6
+forecast_horizon=24
 look_back=24
-Learning_Rate = 0.001
+Learning_Rate = 0.0005
 Epoch = 50
-batch_size = 32
+batch_size = 16
+# Load and preprocess data
+df = pd.read_csv('C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/DBforMLaddingPredictionColAfterAfterCleaning/FinalDatasetForML24HourForecast.csv')  # Update this path
+df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])
+# Extract time components
+df['hour'] = df['MeasureTime'].dt.hour
+df['day_of_week'] = df['MeasureTime'].dt.dayofweek
+df['day_of_month'] = df['MeasureTime'].dt.day
+df['month'] = df['MeasureTime'].dt.month
+df['year'] = df['MeasureTime'].dt.year
+
+# Encode cyclical features
+def encode_cyclical_feature(df, col, max_vals):
+    df[col + '_sin'] = np.sin(2 * np.pi * df[col]/max_vals)
+    df[col + '_cos'] = np.cos(2 * np.pi * df[col]/max_vals)
+    return df
+
+df = encode_cyclical_feature(df, 'hour', 24)
+df = encode_cyclical_feature(df, 'day_of_week', 7)
+df = encode_cyclical_feature(df, 'month', 12)
+
+
 # Function to create dataset
 def create_dataset(data, look_back=look_back, forecast_horizon=forecast_horizon):
     unique_stations = data['Station_name'].unique()
@@ -102,36 +119,44 @@ class TimeSeriesTransformer(nn.Module):
 # Initialize the model
 num_features = X_train_tensor.shape[2]  # Number of features
 print ("num_features",num_features)
-model = TimeSeriesTransformer(num_features, num_layers=1, num_heads=2, dim_feedforward=2048, dropout=0.1, num_output_features=forecast_horizon)
+model = TimeSeriesTransformer(num_features, num_layers=3, num_heads=3, dim_feedforward=2048, dropout=0.1, num_output_features=forecast_horizon)
 
 # Training and evaluation functions
-def train_epoch(model, train_loader, optimizer, criterion, clip_value=1.0):
-    # print ("Call: train_epoch")
+def train_epoch(model, train_loader, optimizer, criterion):
     model.train()
     total_loss = 0
+    total_mae = 0
     for src, tgt in train_loader:
         optimizer.zero_grad()
         output = model(src)
-        # Ensure tgt is reshaped or sliced to match output shape
         loss = criterion(output, tgt)
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), clip_value)  # Gradient clipping
-
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
+
         total_loss += loss.item()
-    return total_loss / len(train_loader)
+        mae = mean_absolute_error(output, tgt)
+        total_mae += mae.item()
+
+    return total_loss / len(train_loader), total_mae / len(train_loader)
+
+
+def mean_absolute_error(output, target):
+    return torch.mean(torch.abs(output - target))
 
 def evaluate(model, val_loader, criterion):
-    # print("Call: evaluate")
     model.eval()
     total_loss = 0
+    total_mae = 0
     with torch.no_grad():
         for src, tgt in val_loader:
             output = model(src)
-            # Ensure tgt is reshaped or sliced to match output shape
             loss = criterion(output, tgt)
             total_loss += loss.item()
-    return total_loss / len(val_loader)
+            mae = mean_absolute_error(output, tgt)
+            total_mae += mae.item()
+    return total_loss / len(val_loader), total_mae / len(val_loader)
+
 
 # Training loop
 train_dataset = TensorDataset(X_train_tensor, Y_train_tensor)
@@ -142,34 +167,50 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 optimizer = torch.optim.Adam(model.parameters(), lr=Learning_Rate)
 criterion = nn.MSELoss()
 # Define Learning Rate Scheduler
-# scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.9)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.7)
 
-train_losses, val_losses = [], []
+train_losses, val_losses, train_maes, val_maes = [], [], [], []
 for epoch in range(Epoch):
     for param_group in optimizer.param_groups:
         print(f'Current learning rate: {param_group["lr"]}')
-    train_loss = train_epoch(model, train_loader, optimizer, criterion)
-    val_loss = evaluate(model, val_loader, criterion)
+    train_loss, train_mae = train_epoch(model, train_loader, optimizer, criterion)
+    val_loss, val_mae = evaluate(model, val_loader, criterion)
+
+    # Log the metrics
     train_losses.append(train_loss)
     val_losses.append(val_loss)
-    print(f'Epoch {epoch}: Train Loss: {train_loss}, Val Loss: {val_loss}')
+    train_maes.append(train_mae)
+    val_maes.append(val_mae)
+    print(f'Epoch {epoch}: Train Loss: {train_loss}, Train MAE: {train_mae}, Val Loss: {val_loss}, Val MAE: {val_mae}')
 
     # Step the scheduler
-    # scheduler.step()
+    scheduler.step()
 
 # Save model
-torch.save(model.state_dict(), 'model_state_dict.pt')
+torch.save(model.state_dict(), 'Model1.pt')
 # torch.save(model, 'model.pt')
 
 # Visualization of training and validation loss
-plt.figure(figsize=(12, 4))
-plt.subplot(1, 2, 1)
-plt.plot(train_losses[1:], label='Train Loss')
-plt.plot(val_losses[1:], label='Validation Loss')
-plt.title('Training and Validation Loss')
-plt.xlabel('Epoch')
-plt.ylabel('MSE Loss')
-plt.legend()
+# Set up the figure and axes
+fig, axs = plt.subplots(1, 2, figsize=(15, 6))  # 1 row, 2 columns for two graphs
+
+# Plotting Training and Validation MAE
+axs[0].plot(train_maes, label='Train MAE')
+axs[0].plot(val_maes, label='Validation MAE')
+axs[0].set_title('Training and Validation MAE')
+axs[0].set_xlabel('Epoch')
+axs[0].set_ylabel('MAE')
+axs[0].legend()
+
+# Plotting Training and Validation Loss (MSE)
+axs[1].plot(train_losses, label='Train Loss (MSE)')
+axs[1].plot(val_losses, label='Validation Loss (MSE)')
+axs[1].set_title('Training and Validation Loss (MSE)')
+axs[1].set_xlabel('Epoch')
+axs[1].set_ylabel('MSE')
+axs[1].legend()
+
+plt.tight_layout()
 plt.show()
 
 # Prediction
@@ -191,22 +232,41 @@ predictions = np.array(predictions).squeeze()
 surface_temp_index = 2
 
 # Visualization of Predictions with past observations
-for random_index in [134, 462, 368, 529, 453, 375]:
-    past_data = X_val_tensor[random_index, :, surface_temp_index].numpy()
-    actual_data = Y_val_tensor[random_index].numpy()  # Assuming Y_val_tensor is [num_samples, forecast_horizon]
-    predicted_data = predictions[random_index]
+# Import the scenarios
+from EvalList import Eval_X_List, Eval_Y_List
 
-    print (random_index)
-    print ("past_data", past_data.shape, past_data)
-    print ("actual_data", actual_data.shape,actual_data)
-    print ("predicted_data", predicted_data.shape, predicted_data)
+#  model is ready for prediction
+np.set_printoptions(threshold=np.inf)
 
+# Loop through each scenario for evaluation
+for i in range(len(Eval_X_List)):
+    X_val_sample = np.array(Eval_X_List[i])
+    Y_val_sample = np.array(Eval_Y_List[i])
+    X_val_sample = X_val_sample.reshape((-1, look_back, num_features))  # Ensure correct shape
+
+    # Convert to torch tensor for prediction
+    X_val_tensor = torch.tensor(X_val_sample, dtype=torch.float32)
+    with torch.no_grad():
+        model_output = model(X_val_tensor)
+    predictions = model_output.cpu().numpy().flatten()  # Adjust based on how your model outputs data
+
+    actual_data = Y_val_sample.flatten()
+    predicted_data = predictions  # Assuming your model outputs the predictions directly
+
+    past_surface_temp = X_val_sample[-1, :, surface_temp_index]  # Adjust index based on your data
+
+    # Visualization
     plt.figure(figsize=(15, 6))
-    plt.plot(range(-look_back, 0), past_data, label='Past', color='green')
-    plt.plot(range(0, forecast_horizon), actual_data, label='Actual', color='blue')
-    plt.plot(range(0, forecast_horizon), predicted_data, label='Predicted', color='red')
-    plt.title(f'Surface Temperature Prediction for Station Index: {random_index}')
-    plt.xlabel('Time Steps')
+    plt.plot(range(-len(past_surface_temp), 0), past_surface_temp, label='Past Surface Temp', color='green')
+    plt.plot(range(0, len(actual_data)), actual_data, label='Actual', color='blue')
+    plt.plot(range(0, len(predicted_data)), predicted_data, label='Predicted', color='red')
+    plt.title(f'Surface Temperature Prediction for Station Index: {i}')
+    plt.xlabel('Time Steps (Relative to Prediction Point)')
     plt.ylabel('Temperature')
     plt.legend()
     plt.show()
+    print("***************************")
+    print(i)
+    print(f"Past surface temp: {past_surface_temp}")
+    print(f"Actual data: {actual_data}")
+    print(f"Predicted data: {predicted_data}")

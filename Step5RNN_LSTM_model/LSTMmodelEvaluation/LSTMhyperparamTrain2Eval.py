@@ -93,10 +93,10 @@ def root_mean_squared_error(y_true, y_pred):
 # Define the LSTM model structures
 # Hyperparameters
 units_options = [50, 100]
-dropout_options = [0.1, 0.2, 0.3]
-batch_sizes = [8, 16, 32]
-learning_rates = [0.01, 0.001, 0.0001, 0.00001, 0.000001]
-epoch = 100
+dropout_options = [0.1, 0.2]#, 0.3]
+batch_sizes = [8, 16 ]#,32]
+learning_rates = [0.01, 0.001]#, 0.0001, 0.00001, 0.000001]
+epoch = 2
 # Define the LSTM model structures with hyperparameters
 def define_model(model_type, input_shape, units, dropout_rate):
     model = Sequential()
@@ -126,6 +126,7 @@ for units in units_options:
         for batch_size in batch_sizes:
             for lr in learning_rates:
                 for model_type in model_types:
+                    # print (units, dropout_rate, batch_size, lr, model_type)
                     print(
                         f"Training {model_type} with units={units}, dropout={dropout_rate}, batch_size={batch_size}, LR={lr}")
 
@@ -158,6 +159,7 @@ for units in units_options:
                         "min_val_rmse": val_rmse
                     })
 # Visualization code goes here - plot the metrics for each model
-
+pd.set_option('display.max_rows', 500)  # or any large number like 500
+pd.set_option('display.max_columns', 10)  # or the number of columns you have
 results_df = pd.DataFrame(model_results)
 print(results_df)

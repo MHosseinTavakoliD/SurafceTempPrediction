@@ -5,11 +5,11 @@ import xgboost as xgb
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import matplotlib.pyplot as plt
 import joblib
-forecast_horizon = 6
+forecast_horizon = 24
 look_back = 24
 Save_model = 'xgboost_model1Pred6h.pkl'
 # Load and preprocess data
-DataSource_file = 'C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/DBforMLaddingPredictionColAfterAfterCleaning/FinalDatasetForML6HourForecast.csv'
+DataSource_file = 'C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/DBforMLaddingPredictionColAfterAfterCleaning/FinalDatasetForML24HourForecast.csv'
 df = pd.read_csv(DataSource_file)
 df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])
 

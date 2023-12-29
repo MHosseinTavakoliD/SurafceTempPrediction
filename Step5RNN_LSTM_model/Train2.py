@@ -25,6 +25,7 @@ Learning_rate = 0.0001
 
 # file_model_save = 'RNNLSTMV1HourForecast24Model2.h5'
 DataSource_file = 'C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/DBforMLaddingPredictionColAfterAfterCleaning/FinalDatasetForML24HourForecast.csv'
+
 # Check if TensorFlow is built with CUDA (GPU support)
 print(tf.test.is_built_with_cuda())
 
@@ -93,7 +94,7 @@ def create_dataset(data, look_back=24, forecast_horizon=12):
 # Create dataset
 X, Y, station_names = create_dataset(df, look_back=look_back, forecast_horizon=forecast_horizon)
 num_features = X.shape[2]
-print ("Number of Features",X.shape[2])
+print ("Number of Features",X.shape)
 # Splitting the data for each station
 train_X, val_X, train_Y, val_Y = {}, {}, {}, {}
 for station in np.unique(station_names):

@@ -10,12 +10,12 @@ from tqdm import tqdm
 
 # Load and preprocess data
 df = pd.read_csv(
-    'C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/DBforMLaddingPredictionColAfterAfterCleaning/FinalDatasetForML6HourForecast.csv')  # Update this path
+    'C:/Users/zmx5fy/SurafceTempPrediction/Step4BuildingupDBforML/DBforMLaddingPredictionColAfterAfterCleaning/FinalDatasetForML24HourForecast.csv')  # Update this path
 df['MeasureTime'] = pd.to_datetime(df['MeasureTime'])
-forecast_horizon = 6
+forecast_horizon = 24
 look_back = 24
-Learning_Rate = 0.01
-Epoch = 10
+Learning_Rate = 0.0005
+Epoch = 50
 batch_size = 32
 
 # Function to create dataset
@@ -51,6 +51,36 @@ print("Y", Y.shape)
 
 # Splitting the data
 X_train, X_val, Y_train, Y_val = train_test_split(X, Y, test_size=0.2, random_state=42)
+# Convert to PyTorch tensors
+X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+X_val_tensor = torch.tensor(X_val, dtype=torch.float32)
+Y_train_tensor = torch.tensor(Y_train, dtype=torch.float32)
+Y_val_tensor = torch.tensor(Y_val, dtype=torch.float32)
+
+# print ("X_val_tensor[0]", X_val_tensor[0])
+
+
+print ("X_train_tensor", X_train_tensor.shape)
+print("X_val_tensor", X_val_tensor.shape)
+print("Y_train_tensor", Y_train_tensor.shape)
+print("Y_val_tensor", Y_val_tensor.shape)
+
+
+# Step 1: Identify and remove rows with NaN in training data
+nan_mask_train = torch.isnan(X_train_tensor).any(dim=2).any(dim=1)
+X_train = X_train_tensor[~nan_mask_train]
+Y_train = Y_train_tensor[~nan_mask_train]
+
+# Step 2: Identify and remove rows with NaN in validation data
+nan_mask_val = torch.isnan(X_val_tensor).any(dim=2).any(dim=1)
+X_val = X_val_tensor[~nan_mask_val]
+Y_val = Y_val_tensor[~nan_mask_val]
+
+# Check the new shapes of the tensors
+print("Shape of X_train_tensor after NaN removal:", X_train_tensor.shape)
+print("Shape of Y_train_tensor after NaN removal:", Y_train_tensor.shape)
+print("Shape of X_val_tensor after NaN removal:", X_val_tensor.shape)
+print("Shape of Y_val_tensor after NaN removal:", Y_val_tensor.shape)
 
 # Normalize the data
 scaler_X = StandardScaler()
@@ -99,7 +129,7 @@ class TimeSeriesTransformer(nn.Module):
         return output
 
 # Initialize the model
-model = TimeSeriesTransformer(num_features, num_layers=4, num_heads=2, dim_feedforward=2048, dropout=0.1,
+model = TimeSeriesTransformer(num_features, num_layers=1, num_heads=2, dim_feedforward=2048, dropout=0.1,
                               num_output_features=forecast_horizon, bias=False)
 
 # Training and evaluation functions

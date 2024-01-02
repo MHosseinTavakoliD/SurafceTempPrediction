@@ -40,7 +40,7 @@ def plot_all_metrics_consistent_style(data, metrics, title):
 
     # Adding legend
     handles, labels = ax.get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper left', bbox_to_anchor=(0.77, 0.5), fontsize='large')
+    fig.legend(handles, labels, loc='center right', bbox_to_anchor=(1, 0.5), fontsize=12)
 
     # Save the figure
     plt.savefig('model_performance_metrics.png', bbox_inches='tight')
@@ -52,7 +52,7 @@ def plot_all_metrics_consistent_style(data, metrics, title):
 data = pd.read_csv('LSTMallModelEvaluationHistory.csv')  # Replace with your data file path
 
 # Define the metrics you want to plot
-metrics = ['Loss', 'MSE', 'MAE']
+metrics = [ 'MSE', 'MAE']
 title = 'Model Performance Metrics (Train vs Validation)'
 
 # Call the function to plot the metrics
@@ -70,7 +70,7 @@ def plot_all_metrics_consistent_style(data, metrics, title):
     color_map = {model: color for model, color in zip(models, sns.color_palette("tab10", len(models)))}
     marker_map = {model: marker for model, marker in zip(models, cycle(['o', 's', '^', 'D', 'x', '+']))}
     marker_size = 3  # Consistent smaller marker size
-    line_weight = 0.5  # Consistent thinner line weight
+    line_weight = 1.5  # Consistent thinner line weight
 
     lines = []  # To store legend handles
     labels = []  # To store legend labels
@@ -94,7 +94,7 @@ def plot_all_metrics_consistent_style(data, metrics, title):
         axes[i].tick_params(axis='both', which='major', labelsize=10)  # Increase font size for axis numbers
 
     fig.suptitle(title)
-    fig.legend(lines, labels, loc='right', bbox_to_anchor=(1.1, 0.5), fontsize=10)  # Increase font size for legend
+    fig.legend(lines, labels, loc='center right', bbox_to_anchor=(1, 0.5), fontsize=12)  # Increase font size for legend
     plt.tight_layout(rect=[0, 0, 0.85, 1])  # Adjust layout to make room for legend
     plt.show()
 
@@ -102,4 +102,4 @@ def plot_all_metrics_consistent_style(data, metrics, title):
 data = pd.read_csv('LSTMallModelEvaluationHistory.csv')  # Replace with your file path
 
 # Plotting all metrics with consistent style across charts
-plot_all_metrics_consistent_style(data, ['Loss', 'MSE', 'MAE'], 'Model Performance Metrics (Train vs Validation)')
+plot_all_metrics_consistent_style(data, [ 'MSE', 'MAE'], 'Model Performance Metrics (Train vs Validation)')

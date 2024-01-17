@@ -61,11 +61,11 @@ for i, (scenario, data) in enumerate(Scenarios.items()):
     print (scenario, len(data['actual_data']))
 
     # Plotting data
-    ax.plot(hours[:24], data['past_surface_temp'], label='Past Surface Temp', color='blue')
-    ax.plot(hours[23:], data['actual_data'], label='Actual Data', color='green')
-    ax.plot(hours[24:], data['deep_lstm_pred'], label='Deep LSTM Predicted', color='red', linestyle='dashed')
-    ax.plot(hours[24:], data['bi_lstm_pred'], label='Bidirectional LSTM Predicted', color='purple', linestyle='dashed')
-    ax.plot(hours[24:], data['stacked_lstm_pred'], label='Stacked LSTM Predicted', color='orange', linestyle='dashed')
+    ax.plot(hours[:24], data['past_surface_temp'], label='Past Surface Temp', color='blue', linestyle='solid')
+    ax.plot(hours[23:], data['actual_data'], label='Actual Data', color='green', linestyle='--')
+    ax.plot(hours[24:], data['deep_lstm_pred'], label='Deep LSTM Predicted', color='red', linestyle='--', marker = '|', markersize=10,  markevery=5)
+    ax.plot(hours[24:], data['bi_lstm_pred'], label='Bidirectional LSTM Predicted', color='purple', linestyle='--', marker = '*', markersize=7,  markevery=5)
+    ax.plot(hours[24:], data['stacked_lstm_pred'], label='Stacked LSTM Predicted', color='orange', linestyle='--', marker = 'o', markersize=7,  markevery=5)
 
     # Adding titles and labels
     ax.set_title(f'{scenario}')

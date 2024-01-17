@@ -49,8 +49,8 @@ for i, (scenario, data) in enumerate(Scenarios.items()):
 
     # Plotting data
     ax.plot(hours[:24], data['past_surface_temp'], label='Past Surface Temp', color='blue')
-    ax.plot(hours[23:], data['actual_data'], label='Actual Data', color='green')
-    ax.plot(hours[24:], data['Predicted'], label='Transformer Predicted', color='red', linestyle='dashed')
+    ax.plot(hours[23:], data['actual_data'], label='Actual Data', color='green', linestyle='--')
+    ax.plot(hours[24:], data['Predicted'], label='Transformer Predicted', color='red', linestyle='--', marker = '*', markersize=7,  markevery=5)
 
 
     # Adding titles and labels

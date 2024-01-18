@@ -6,8 +6,8 @@ import pandas as pd
 # request_URL = "https://www.viewmondousa.com/Token"
 # credentials = {
 #     "grant_type": "password",
-#     "Username": "MichiganTech",
-#     "Password": "Husky#1"
+#     "Username": "*****",
+#     "Password": "***"
 # }
 #
 # response = requests.post(request_URL, data=credentials)

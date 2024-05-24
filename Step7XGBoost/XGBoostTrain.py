@@ -31,7 +31,8 @@ def create_dataset_for_xgboost(data, look_back=look_back, forecast_horizon=forec
 
             X.append(past_features.values.flatten())
             Y.append(target.values)
-
+            print ("X", X)
+            print ("Y", Y)
     return np.array(X), np.array(Y)
 
 
